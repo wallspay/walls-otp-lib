@@ -21,40 +21,45 @@ type Storage interface {
 
 type HMACOTPGenerator struct {
 	storage Storage
+	secretKey string
+	expiry time.Duration
 }
 
-func NewHMACOTPGenerator(storage Storage) *HMACOTPGenerator {
+func NewHMACOTPGenerator(storage Storage, secretKey string, expiry time.Duration) *HMACOTPGenerator {
     if storage == nil {
         // Use the default in-memory storage implementation
         storage = NewMemoryStorage()
     }
 
-    return &HMACOTPGenerator{storage: storage}
+    return &HMACOTPGenerator{storage: storage,
+							secretKey: secretKey,
+							expiry: expiry,
+	}
 }
 
-func (gen *HMACOTPGenerator) GenerateOTP(secretKey string, input string, expiry time.Duration) (string, error) {
-	timeStep := time.Now().Unix() / int64(expiry.Seconds())
-	key, err := base64.StdEncoding.DecodeString(secretKey)
+func (gen *HMACOTPGenerator) GenerateOTP(input string) (string, error) {
+	timeStep := time.Now().Unix() / int64(gen.expiry.Seconds())
+	key, err := base64.StdEncoding.DecodeString(gen.secretKey)
 	if err != nil {
 		fmt.Printf("decoding secret key error %v\n", err)
 		return "", err
 	}
 	info := input + string(key)
 	otp := generateHOTP(info, timeStep)
-	err = gen.storage.SaveOTP(otp, expiry)
+	err = gen.storage.SaveOTP(otp, gen.expiry)
 	if err != nil {
 		return "", err
 	}
 	return otp, nil
 }
 
-func (gen *HMACOTPGenerator) ValidateOTP(secretKey string, input string, otp string) (bool, error) {
+func (gen *HMACOTPGenerator) ValidateOTP(input string, otp string) (bool, error) {
 	expiry, err := gen.storage.RetrieveOTP(otp)
 	if err != nil {
 		return false, err
 	}
 	timeStep := time.Now().Unix() / int64(expiry.Seconds())
-	key, err := base64.StdEncoding.DecodeString(secretKey)
+	key, err := base64.StdEncoding.DecodeString(gen.secretKey)
 	if err != nil {
 		fmt.Printf("decoding secret key error %v\n", err)
 		return false, err
