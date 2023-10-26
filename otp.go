@@ -15,7 +15,7 @@ type OTPGenerator interface {
 }
 
 type Storage interface {
-	SaveOTP(ctx context.Context, otp string, expiry time.Duration) error
+	SaveOTP(ctx context.Context, otp string) error
 	RetrieveOTP(ctx context.Context, otp string) (time.Duration, error)
 	MarkOTPUsed(ctx context.Context, otp string) error
 }
@@ -29,7 +29,7 @@ type HMACOTPGenerator struct {
 func NewHMACOTPGenerator(storage Storage, secretKey string, expiry time.Duration) *HMACOTPGenerator {
     if storage == nil {
         // Use the default in-memory storage implementation
-        storage = NewMemoryStorage()
+        storage = NewMemoryStorage(expiry)
     }
 
     return &HMACOTPGenerator{storage: storage,
@@ -48,7 +48,7 @@ func (gen *HMACOTPGenerator) GenerateOTP(ctx context.Context, createOtpDto Creat
 	input:= createOtpDto.Contact + ":" + createOtpDto.DeviceImei + ":" + createOtpDto.OtpType 
 	info := input + string(key)
 	otp := generateHOTP(info, timeStep)
-	err = gen.storage.SaveOTP(ctx,otp, gen.expiry)
+	err = gen.storage.SaveOTP(ctx,otp)
 	if err != nil {
 		return "", err
 	}
@@ -103,14 +103,18 @@ func generateHOTP(info string, counter int64) string {
 
 type MemoryStorage struct {
 	otps map[string]time.Duration
+	expiry time.Duration
 }
 
-func NewMemoryStorage() *MemoryStorage {
-	return &MemoryStorage{otps: make(map[string]time.Duration)}
+func NewMemoryStorage(expiry time.Duration) *MemoryStorage {
+    return &MemoryStorage{
+        otps:   make(map[string]time.Duration),
+        expiry: expiry,
+    }
 }
 
-func (s *MemoryStorage) SaveOTP(ctx context.Context,otp string, expiry time.Duration) error {
-	s.otps[otp] = expiry
+func (s *MemoryStorage) SaveOTP(ctx context.Context,otp string) error {
+	s.otps[otp] = s.expiry
 	return nil
 }
 
