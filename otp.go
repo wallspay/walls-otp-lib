@@ -131,8 +131,6 @@ type CreateOtpDto struct {
 	Contact string    `json:"contact" bson:"contact" validate:"required,valid_contact"`
 	Channel string    `json:"channel" bson:"channel" validate:"eq=sms|eq=email|eq=in_app"`
 	DeviceImei             string `json:"imei" bson:"imei" validate:"required,imei,min=10,max=50"`
-	Duration     time.Duration    `json:"duration" bson:"duration"`
-	Timestamp    string `json:"timestamp" bson:"timestamp"`
 }
 
 type ValidateOtpDto struct {
@@ -140,5 +138,4 @@ type ValidateOtpDto struct {
 	OtpType string    `json:"otp_type" bson:"otp_type" validate:"required,eq=create_user|eq=create_company|eq=verify_email"`
 	Contact string    `json:"contact" bson:"contact" validate:"valid_contact"`
 	DeviceImei              string `json:"imei" bson:"imei" validate:"required,imei,min=10,max=50"`
-	Duration     time.Duration    `json:"duration" bson:"duration"`
 }
