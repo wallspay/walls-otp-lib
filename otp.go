@@ -1,14 +1,14 @@
 package wallsotplib
 
 import (
-	"context"
+    "context"
+    "fmt"
+    "time"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
-	"fmt"
-	"time"
+	
 )
-
 type OTPGenerator interface {
 	GenerateOTP(ctx context.Context, createOtpDto CreateOtpDto) (string, error)
     ValidateOTP(ctx context.Context, createOtpDto ValidateOtpDto) (bool, error)
@@ -45,7 +45,7 @@ func (gen *HMACOTPGenerator) GenerateOTP(ctx context.Context, createOtpDto Creat
 		fmt.Printf("decoding secret key error %v\n", err)
 		return "", err
 	}
-	input:= createOtpDto.Contact + ":" + createOtpDto.DeviceImei + ":" + createOtpDto.OtpType 
+	input:= createOtpDto.Contact + "." + createOtpDto.Imei + "." + createOtpDto.OtpType 
 	info := input + string(key)
 	otp := generateHOTP(info, timeStep)
 	err = gen.storage.SaveOTP(ctx,otp)
@@ -66,7 +66,7 @@ func (gen *HMACOTPGenerator) ValidateOTP(ctx context.Context, validateOtpDto Val
 		fmt.Printf("decoding secret key error %v\n", err)
 		return false, err
 	}
-	input:= validateOtpDto.Contact + ":" + validateOtpDto.DeviceImei + ":" + validateOtpDto.OtpType 
+	input:= validateOtpDto.Contact + "." + validateOtpDto.Imei + "." + validateOtpDto.OtpType 
 	info := input + string(key)
 	validOtp := generateHOTP(info, timeStep)
 	if validateOtpDto.Otp != validOtp {
@@ -134,12 +134,12 @@ type CreateOtpDto struct {
 	OtpType string    `json:"otp_type" bson:"otp_type" validate:"required,eq=create_user|eq=create_company|eq=verify_email|eq=verify_phone"`
 	Contact string    `json:"contact" bson:"contact" validate:"required,valid_contact"`
 	Channel string    `json:"channel" bson:"channel" validate:"eq=sms|eq=email|eq=in_app"`
-	DeviceImei             string `json:"imei" bson:"imei" validate:"required,imei,min=10,max=50"`
+	Imei             string `json:"imei" bson:"imei" validate:"required,imei,min=10,max=50"`
 }
 
 type ValidateOtpDto struct {
 	Otp     string    `json:"otp" bson:"otp" validate:"required,len=6"`
 	OtpType string    `json:"otp_type" bson:"otp_type" validate:"required,eq=create_user|eq=create_company|eq=verify_email"`
 	Contact string    `json:"contact" bson:"contact" validate:"valid_contact"`
-	DeviceImei              string `json:"imei" bson:"imei" validate:"required,imei,min=10,max=50"`
+	Imei              string `json:"imei" bson:"imei" validate:"required,imei,min=10,max=50"`
 }
