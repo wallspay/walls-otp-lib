@@ -56,22 +56,22 @@ func (gen *HMACOTPGenerator) GenerateOTP(ctx context.Context, createOtpDto Creat
 }
 
 func (gen *HMACOTPGenerator) ValidateOTP(ctx context.Context, validateOtpDto ValidateOtpDto) (bool, error) {
-	expiry, err := gen.storage.RetrieveOTP(ctx,validateOtpDto.Otp)
+	_, err := gen.storage.RetrieveOTP(ctx,validateOtpDto.Otp)
 	if err != nil {
 		return false, err
 	}
-	timeStep := time.Now().Unix() / int64(expiry.Seconds())
-	key, err := base64.StdEncoding.DecodeString(gen.secretKey)
-	if err != nil {
-		fmt.Printf("decoding secret key error %v\n", err)
-		return false, err
-	}
-	input:= validateOtpDto.Contact + "." + validateOtpDto.Imei + "." + validateOtpDto.OtpType 
-	info := input + string(key)
-	validOtp := generateHOTP(info, timeStep)
-	if validateOtpDto.Otp != validOtp {
-		return false, fmt.Errorf("invalid OTP")
-	}
+	// timeStep := time.Now().Unix() / int64(expiry.Seconds())
+	// key, err := base64.StdEncoding.DecodeString(gen.secretKey)
+	// if err != nil {
+	// 	fmt.Printf("decoding secret key error %v\n", err)
+	// 	return false, err
+	// }
+	// input:= validateOtpDto.Contact + "." + validateOtpDto.Imei + "." + validateOtpDto.OtpType 
+	// info := input + string(key)
+	// validOtp := generateHOTP(info, timeStep)
+	// if validateOtpDto.Otp != validOtp {
+	// 	return false, fmt.Errorf("invalid OTP")
+	// }
 	err = gen.storage.MarkOTPUsed(ctx,validateOtpDto.Otp)
 	if err != nil {
 		return false, err
